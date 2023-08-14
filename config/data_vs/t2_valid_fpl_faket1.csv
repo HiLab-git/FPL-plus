@@ -1,0 +1,14 @@
+image,label
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_108_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_108_t2.npy
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_114_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_114_t2.npy
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_166_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_166_t2.npy
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_176_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_176_t2.npy
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_182_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_182_t2.npy
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_18_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_18_t2.npy
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_213_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_213_t2.npy
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_229_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_229_t2.npy
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_235_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_235_t2.npy
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_27_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_27_t2.npy
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_36_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_36_t2.npy
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_59_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_59_t2.npy
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_5_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/pl_t1-t2_npy_hard/vs_gk_5_t2.npy

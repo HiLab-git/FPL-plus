@@ -1,0 +1,9 @@
+image,label,pixel_weight
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_183_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/unet_2D5dcbn_vs_t1_faket2_twostage-trainall/vs_gk_183_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/script/FPL/nii/vs_gk_183_t2.nii.gz
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_22_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/unet_2D5dcbn_vs_t1_faket2_twostage-trainall/vs_gk_22_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/script/FPL/nii/vs_gk_22_t2.nii.gz
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_176_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/unet_2D5dcbn_vs_t1_faket2_twostage-trainall/vs_gk_176_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/script/FPL/nii/vs_gk_176_t2.nii.gz
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_188_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/unet_2D5dcbn_vs_t1_faket2_twostage-trainall/vs_gk_188_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/script/FPL/nii/vs_gk_188_t2.nii.gz
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_242_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/unet_2D5dcbn_vs_t1_faket2_twostage-trainall/vs_gk_242_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/script/FPL/nii/vs_gk_242_t2.nii.gz
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_105_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/unet_2D5dcbn_vs_t1_faket2_twostage-trainall/vs_gk_105_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/script/FPL/nii/vs_gk_105_t2.nii.gz
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_84_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/unet_2D5dcbn_vs_t1_faket2_twostage-trainall/vs_gk_84_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/script/FPL/nii/vs_gk_84_t2.nii.gz
+/data2/jianghao/FPL-UDA/vs_data/T2_train/img/vs_gk_36_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/results/unet_2D5dcbn_vs_t1_faket2_twostage-trainall/vs_gk_36_t2.nii.gz,/data2/jianghao/VS/vs_seg2021/script/FPL/nii/vs_gk_36_t2.nii.gz

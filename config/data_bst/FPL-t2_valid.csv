@@ -1,0 +1,9 @@
+image,label
+/data2/jianghao/FPL-UDA/bst_data/t2_train/img/BraTS20_Training_076.nii.gz,/data2/jianghao/VS/vs_seg2021/results_bst/m-dsbn_t2_i-t2_trainall/BraTS20_Training_076.nii.gz
+/data2/jianghao/FPL-UDA/bst_data/t2_train/img/BraTS20_Training_039.nii.gz,/data2/jianghao/VS/vs_seg2021/results_bst/m-dsbn_t2_i-t2_trainall/BraTS20_Training_039.nii.gz
+/data2/jianghao/FPL-UDA/bst_data/t2_train/img/BraTS20_Training_289.nii.gz,/data2/jianghao/VS/vs_seg2021/results_bst/m-dsbn_t2_i-t2_trainall/BraTS20_Training_289.nii.gz
+/data2/jianghao/FPL-UDA/bst_data/t2_train/img/BraTS20_Training_279.nii.gz,/data2/jianghao/VS/vs_seg2021/results_bst/m-dsbn_t2_i-t2_trainall/BraTS20_Training_279.nii.gz
+/data2/jianghao/FPL-UDA/bst_data/t2_train/img/BraTS20_Training_054.nii.gz,/data2/jianghao/VS/vs_seg2021/results_bst/m-dsbn_t2_i-t2_trainall/BraTS20_Training_054.nii.gz
+/data2/jianghao/FPL-UDA/bst_data/t2_train/img/BraTS20_Training_074.nii.gz,/data2/jianghao/VS/vs_seg2021/results_bst/m-dsbn_t2_i-t2_trainall/BraTS20_Training_074.nii.gz
+/data2/jianghao/FPL-UDA/bst_data/t2_train/img/BraTS20_Training_237.nii.gz,/data2/jianghao/VS/vs_seg2021/results_bst/m-dsbn_t2_i-t2_trainall/BraTS20_Training_237.nii.gz
+/data2/jianghao/FPL-UDA/bst_data/t2_train/img/BraTS20_Training_097.nii.gz,/data2/jianghao/VS/vs_seg2021/results_bst/m-dsbn_t2_i-t2_trainall/BraTS20_Training_097.nii.gz

@@ -1,0 +1,5 @@
+following based on : script/FPL/vs_uncertainty_t2_model_twostage.npy
+FPL-t2_40p_twostage_2022.csv: 
+    twostage in DSBN; DSBN-T2; 40%; model: model_vs/unet_2D5dcbn_vs_t1_faket2_twostage/unet_2D5dcbn_vs_t1_faket2_twostage_800000.pt
+FPL-t2_30p_twostage_2022.csv:
+FPL-t2_20p_twostage_2022.csv:  
