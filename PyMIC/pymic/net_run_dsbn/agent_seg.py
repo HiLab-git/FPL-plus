@@ -92,18 +92,7 @@ class SegmentationAgent(NetRunAgent):
         else:
             self.net.double()
         
-        if self.config['training']['aes']  == True:
-                from PyMIC.pymic.net.net3d.unet2d5_dsbn import AEs
-                self.AEs = AEs(2)
-                self.AEs.float()
-                if self.config['training']['aes_para'] is not None:
-                    print('**********AE,param**********')
-                    init_weights(self.AEs)
-                    self.AEs.load_state_dict(torch.load(self.config['training']['aes_para'],map_location='cpu'))
-                else:
-                    init_weights(self.AEs)
-                param_number_aes = sum(p.numel() for p in self.AEs.parameters() if p.requires_grad)
-                logging.info('parameter number of AEs {0:}'.format(param_number_aes))
+
         if self.config['training']['dis']  == True:
                 from PyMIC.pymic.net.net3d.unet2d5_dsbn import Dis
                 self.disseg = Dis(self.config['network']['class_num'])
@@ -119,8 +108,6 @@ class SegmentationAgent(NetRunAgent):
     def get_parameters_to_update(self):
         if self.config['training']['dis']  == True:
             self.disSeg_opt = torch.optim.Adam(self.disseg.parameters(),lr=0.0001,betas=(0.5,0.999))
-        if self.config['training']['aes']  == True:
-            self.aes_opt = torch.optim.Adam(self.AEs.parameters(),lr=0.0001,betas=(0.5,0.999))
         return self.net.parameters()
 
     def create_loss_calculator(self):
@@ -169,312 +156,9 @@ class SegmentationAgent(NetRunAgent):
             for x in iterable:
                 yield x
 
-    def training_dual_doamian333(self):
-        import tqdm
-        class_num   = self.config['network']['class_num']
-        # self.dual  = self.config['training']['dual']
-        iter_valid  = self.config['training']['iter_valid']
-        number_domians = self.config['network']['num_domains']
-        train_loss  = 0
-        train_dice_list_0 = []
-        train_dice_list_1 = []
-        import tent
-        import math
-        
-        def setup_optimizer(params):
-            return optim.Adam(params,
-                        lr=0.0001,
-                        betas=(0.5, 0.999),
-                        weight_decay=0.0001)
-        def setup_tent(model):
-            """Set up tent adaptation.
-
-            Configure the model for training + feature modulation by batch statistics,
-            collect the parameters for feature modulation by gradient optimization,
-            set up the optimizer, and then tent the model.
-            """
-            model = tent.configure_model(model)
-            params, param_names = tent.collect_params(model)
-            optimizer = setup_optimizer(params)
-           
-        
-            return model,optimizer
-        # self.net.train()
-        self.net,optimizer = setup_tent(self.net)
-        
-        self.criterionL2 = nn.MSELoss()
-        # self.disseg.train()
-        if self.dual:
-            trainIter_0  = iter(self.train_loader_1)
-            trainIter_1  = iter(self.train_loader_2)
-        for it in range(iter_valid):
-            self.optimizer.zero_grad()
-            try:
-                data_0 = next(trainIter_0)
-            except StopIteration:
-                trainIter_0  = iter(self.train_loader_1)
-                data_0 = next(trainIter_0)
-            try:
-                data_1 = next(trainIter_1)
-            except StopIteration:
-                trainIter_1  = iter(self.train_loader_2)
-                data_1 = next(trainIter_1)
-            # inputs_1 = torch.tensor(nonlinear_transformation(data_0['image']))
-            inputs_01 = self.convert_tensor_type(data_0['image1'])
-            inputs_01 = self.convert_tensor_type(inputs_01).to(self.device)
-            inputs_00 = self.convert_tensor_type(data_0['image'])
-            sample_weight_0 = data_0['image_weight']
-
-            inputs_11 = self.convert_tensor_type(data_1['image1'])
-            inputs_11 = self.convert_tensor_type(inputs_11).to(self.device)
-            inputs_10 = self.convert_tensor_type(data_1['image'])
-            sample_weight_1 = data_1['image_weight']
-            
-                
-            labels_prob_1 = self.convert_tensor_type(data_1['label_prob'])   
-            inputs_10,inputs_11 = inputs_10.to(self.device),inputs_11.to(self.device)
-            inputs_00,inputs_01, labels_prob_1 = inputs_00.to(self.device),inputs_01.to(self.device), labels_prob_1.to(self.device)
-            # y = self.net(inputs_11,domain_label=0*torch.ones(inputs_11.shape[0], dtype=torch.long))
-            y1 = self.net(inputs_10,domain_label=1*torch.ones(inputs_10.shape[0], dtype=torch.long))
-            y0 = self.net(inputs_00,domain_label=1*torch.ones(inputs_00.shape[0], dtype=torch.long))
-            proba1 = y1.softmax(1)
-            proba0 = y0.softmax(1)
-            n, c, d, h, w = y1.size()
-            entropy1 = -(proba1 * torch.log2(proba1 + 1e-10)).sum() / \
-            (n * h * w * torch.log2(torch.tensor(c, dtype=torch.float)))
-            entropy0 = -(proba0 * torch.log2(proba0 + 1e-10)).sum() / \
-            (n * h * w * torch.log2(torch.tensor(c, dtype=torch.float)))
-            loss = entropy0+entropy1
-            
-            loss.backward()
-            optimizer.step()
-            optimizer.zero_grad()
-            print(loss.item(),'entropy loss')
-            # outputs_01 = self.net(inputs_01, domain_label=0*torch.ones(inputs_01.shape[0], dtype=torch.long))
-            outputs_11 = self.net(inputs_11, domain_label=0*torch.ones(inputs_11.shape[0], dtype=torch.long))
-            outputs_10 = self.net(inputs_10, domain_label=1*torch.ones(inputs_10.shape[0], dtype=torch.long))
-            # outputs_00 = self.net(inputs_00, domain_label=1*torch.ones(inputs_00.shape[0], dtype=torch.long))
-            # print(inputs_0.max(),inputs_0.min(),inputs_1.max(),inputs_1.min(),'****************************************')
-            # print('sample weight:',sample_weight,len(sample_weight))
-            # print('sample weight:',sample_weight)
-            # loss = 0
-            # for i in range(2):    
-                # if sample_weight[i] < 0.23:
-            # loss_10 = self.get_loss_value(data_1, outputs_10, labels_prob_1,self.fpl_uda)
-            # loss_11 = self.get_loss_value(data_1, outputs_11, labels_prob_1,self.fpl_uda)
-            # loss += loss_11/2
-            # loss +=loss_10/2
-            #         # print('sample weight < 0.23:',sample_weight,loss)
-            #     # else:
-            # outputs_01 = outputs_01.softmax(1)
-            # outputs_00 = outputs_00.softmax(1)
-            # D,B,C,W,H = outputs_01.shape
-            # entropy1 = -(outputs_01 * torch.log2(outputs_01 + 1e-10))
-            # entropy2 = -(outputs_00 * torch.log2(outputs_00 + 1e-10))
-            # loss += (entropy1.sum()+entropy2.sum())/2/(W*H*C)
-            # loss_2 = self.criterionL2(entropy1,entropy2)
-            # loss += loss_2
-            #         # print(outputs_11[i:i+1,].max(),outputs_11.min(),entropy1.shape,entropy1.max(),entropy1.min())
-            #         # print('sample weight > 0.23:',sample_weight,loss_2,entropy1.sum,entropy2.sum())
-            # loss.backward()
-            # self.optimizer.step()
-            # print(loss.item())
-            if(self.scheduler is not None and \
-                not isinstance(self.scheduler, lr_scheduler.ReduceLROnPlateau)):
-                self.scheduler.step()
-            
-            # get dice evaluation for each class
-            if(isinstance(outputs_11, tuple) or isinstance(outputs_11, list)):
-                outputs_11 = outputs_11[0] 
-            outputs_argmax_11 = torch.argmax(outputs_11, dim = 1, keepdim = True)
-            soft_out_11       = get_soft_label(outputs_argmax_11, class_num, self.tensor_type)
-            outputs_argmax_10 = torch.argmax(outputs_10, dim = 1, keepdim = True)
-            soft_out_10       = get_soft_label(outputs_argmax_10, class_num, self.tensor_type)
-            soft_out_11, labels_prob = reshape_prediction_and_ground_truth(soft_out_11, labels_prob_1) 
-            dice_list_11 = get_classwise_dice(soft_out_11, labels_prob)
-            train_dice_list_0.append(dice_list_11.cpu().numpy())
-        
-            soft_out_10, labels_prob = reshape_prediction_and_ground_truth(soft_out_10, labels_prob_1) 
-            dice_list_10 = get_classwise_dice(soft_out_10, labels_prob)
-            train_dice_list_1.append(dice_list_10.cpu().numpy())  
-            # if self.config['training']['dis']  == True:
-            #     # self.optimizer.zero_grad()
-            #     for train_idx in range(int(number_domians)):
-            #         # zero the parameter gradients
-            #         self.disSeg_opt.zero_grad()
-            #         # forward + backward + optimize
-            #         if train_idx == 0:
-            #             outputs_11 = self.net(inputs_0, domain_label=train_idx*torch.ones(inputs_0.shape[0], dtype=torch.long))
-            #             pred_real = self.disseg(outputs_11)
-            #             all1 = torch.ones_like(pred_real)
-            #             loss_real = self.criterionL2(pred_real, all1)
-            #             loss_real.backward()
-            #             self.disSeg_opt.step()
-                        
-            #         elif train_idx == 1:
-            #             self.disSeg_opt.zero_grad()
-            #             outputs_22 = self.net(inputs_1, domain_label=train_idx*torch.ones(inputs_1.shape[0], dtype=torch.long))
-            #             pred_fake = self.disseg(outputs_22)      
-            #             all0 = torch.zeros_like(pred_fake)
-            #             loss_fake = self.criterionL2(pred_fake, all0)
-            #             # loss_D = (loss_real + loss_fake) * 0.5
-            #             loss_fake.backward()
-            #             self.disSeg_opt.step()
-            #     # print('dis loss', (loss_fake.item(),loss_real.item()))
-
-        train_avg_loss = train_loss / iter_valid / int(number_domians)
-        train_cls_dice_0 = np.asarray(train_dice_list_0).mean(axis = 0)
-        train_avg_dice_0 = train_cls_dice_0.mean()
-  
-        train_cls_dice_1 = np.asarray(train_dice_list_1).mean(axis = 0)
-        train_avg_dice_1 = train_cls_dice_1.mean()
-        train_avg_dice = (train_avg_dice_0+train_avg_dice_1)/2
-        train_cls_dice = (train_cls_dice_0+train_cls_dice_1)/2
-
-        train_scalers = {'loss': train_avg_loss, 'avg_dice':train_avg_dice,'class_dice': train_cls_dice }
-        return train_scalers
-    
-    def training_dis(self):
-        import tqdm
-        class_num   = self.config['network']['class_num']
-        iter_valid  = self.config['training']['iter_valid']
-        number_domians = self.config['network']['num_domains']
-        train_loss  = 0
-        train_dice_list_0 = []
-        train_dice_list_1 = []
-        self.net.train()
-        
-        if number_domians == 2:
-            trainIter_0  = iter(self.train_loader_1)
-            trainIter_1  = iter(self.train_loader_2)
-        elif number_domians == 1:
-            trainIter_0  = iter(self.train_loader_1)
-        for it in range(iter_valid):
-            if number_domians == 2:
-                try:
-                    data_0 = next(trainIter_0)
-                except StopIteration:
-                    trainIter_0  = iter(self.train_loader_1)
-                    data_0 = next(trainIter_0)
-                try:
-                    data_1 = next(trainIter_1)
-                except StopIteration:
-                    trainIter_1  = iter(self.train_loader_2)
-                    data_1 = next(trainIter_1)
-                inputs_0      = self.convert_tensor_type(data_0['image'])
-                labels_prob_0 = self.convert_tensor_type(data_0['label_prob'])       
-                inputs_1      = self.convert_tensor_type(data_1['image'])
-                labels_prob_1 = self.convert_tensor_type(data_1['label_prob'])   
-                # sample_weight_1 = self.convert_tensor_type(data_1['image_weight'] ).to(self.device)
-                # pixel_weight_1 = self.convert_tensor_type(data_1['pixel_weight'] ).to(self.device)
-                inputs_0, labels_prob_0 = inputs_0.to(self.device), labels_prob_0.to(self.device)
-                inputs_1, labels_prob_1 = inputs_1.to(self.device), labels_prob_1.to(self.device)
-            elif number_domians == 1:
-                try:
-                    data_0 = next(trainIter_0)
-                except StopIteration:
-                    trainIter_0  = iter(self.train_loader_1)
-                    data_0 = next(trainIter_0)
-                inputs_0 = self.convert_tensor_type(data_0['image'])
-                labels_prob_0 = self.convert_tensor_type(data_0['label_prob'])   
-                inputs_0, labels_prob_0 = inputs_0.to(self.device), labels_prob_0.to(self.device)
-            # zero the parameter gradients
-            self.optimizer.zero_grad()
-            for train_idx in range(int(number_domians)):
-                # forward + backward + optimize
-                if train_idx == 0:
-                    outputs_11 = self.net(inputs_0, domain_label=train_idx*torch.ones(inputs_0.shape[0], dtype=torch.long))
-                    outputs_argmax_11 = torch.argmax(outputs_11, dim = 1, keepdim = True)
-                    D,B,C,W,H = outputs_11.shape
-                    entropy0 = -(outputs_11.softmax(1) * torch.log2(outputs_11.softmax(1) + 1e-10)).sum()/(W*H*C*D) 
-                    loss0 = self.get_loss_value(data_0, outputs_11, labels_prob_0,self.fpl_uda)
-                elif train_idx == 1:
-                    # print(inputs_1.shape,pixel_weight_1.shape,labels_prob_1.shape,sample_weight_1)
-                    outputs_22 = self.net(inputs_1, domain_label=train_idx*torch.ones(inputs_1.shape[0], dtype=torch.long))
-                    outputs_argmax_22 = torch.argmax(outputs_22, dim = 1, keepdim = True)
-                    D,B,C,W,H = outputs_22.shape
-                    entropy1 = -(outputs_22.softmax(1) * torch.log2(outputs_22.softmax(1) + 1e-10)).sum()/(W*H*C*D) 
-                    loss1 = self.get_loss_value(data_1, outputs_22, labels_prob_1,self.fpl_uda)
-
-            if self.config['training']['dis']  == True:
-                pred_real = self.disseg(outputs_argmax_11)
-                all1 = torch.ones_like(pred_real)
-                loss_real = self.criterionL2(pred_real, all1)
-                pred_fake = self.disseg(outputs_argmax_22)      
-                all0 = torch.zeros_like(pred_fake)
-                loss_fake = self.criterionL2(pred_fake, all0)
-                loss = loss_real + loss
-                
-            if self.config['training']['dis']  == True:
-                self.criterionL2 = nn.MSELoss()
-                pred_fake = self.disseg(outputs_argmax_22)      
-                all1 = torch.ones_like(pred_fake)
-                loss_real = self.criterionL2(pred_fake, all1)
-
-            loss += entropy1
-            loss.backward()
-            self.optimizer.step()
-            if(self.scheduler is not None and \
-                not isinstance(self.scheduler, lr_scheduler.ReduceLROnPlateau)):
-                self.scheduler.step()
-            train_loss = train_loss + loss.item()
-       
-            # get dice evaluation for each class
-            if(isinstance(outputs, tuple) or isinstance(outputs, list)):
-                outputs = outputs[0] 
-            outputs_argmax = torch.argmax(outputs, dim = 1, keepdim = True)
-            soft_out       = get_soft_label(outputs_argmax, class_num, self.tensor_type)
-            if train_idx == 0:
-                soft_out, labels_prob = reshape_prediction_and_ground_truth(soft_out, labels_prob_0) 
-                dice_list = get_classwise_dice(soft_out, labels_prob)
-                train_dice_list_0.append(dice_list.cpu().numpy())
-
-            elif train_idx == 1:
-                soft_out, labels_prob = reshape_prediction_and_ground_truth(soft_out, labels_prob_1) 
-                dice_list = get_classwise_dice(soft_out, labels_prob)
-                train_dice_list_1.append(dice_list.cpu().numpy())  
-            if self.config['training']['dis']  == True:
-                # self.optimizer.zero_grad()
-                for train_idx in range(int(number_domians)):
-                    # zero the parameter gradients
-                    self.disSeg_opt.zero_grad()
-                    # forward + backward + optimize
-                    if train_idx == 0:
-                        outputs_11 = self.net(inputs_0, domain_label=train_idx*torch.ones(inputs_0.shape[0], dtype=torch.long))
-                        pred_real = self.disseg(outputs_11)
-                        all1 = torch.ones_like(pred_real)
-                        loss_real = self.criterionL2(pred_real, all1)
-                        loss_real.backward()
-                        self.disSeg_opt.step()
-                        
-                    elif train_idx == 1:
-                        self.disSeg_opt.zero_grad()
-                        outputs_22 = self.net(inputs_1, domain_label=train_idx*torch.ones(inputs_1.shape[0], dtype=torch.long))
-                        pred_fake = self.disseg(outputs_22)      
-                        all0 = torch.zeros_like(pred_fake)
-                        loss_fake = self.criterionL2(pred_fake, all0)
-                        # loss_D = (loss_real + loss_fake) * 0.5
-                        loss_fake.backward()
-                        self.disSeg_opt.step()
-                # print('dis loss', (loss_fake.item(),loss_real.item()))
-
-        train_avg_loss = train_loss / iter_valid / int(number_domians)
-        train_cls_dice_0 = np.asarray(train_dice_list_0).mean(axis = 0)
-        train_avg_dice_0 = train_cls_dice_0.mean()
-        if number_domians == 2:
-            train_cls_dice_1 = np.asarray(train_dice_list_1).mean(axis = 0)
-            train_avg_dice_1 = train_cls_dice_1.mean()
-            train_avg_dice = (train_avg_dice_0+train_avg_dice_1)/2
-            train_cls_dice = (train_cls_dice_0+train_cls_dice_1)/2
-        elif number_domians == 1:
-            train_avg_dice = train_avg_dice_0
-            train_cls_dice = train_cls_dice_0
-        train_scalers = {'loss': train_avg_loss, 'avg_dice':train_avg_dice,'class_dice': train_cls_dice }
-        return train_scalers
     def training_dual_doamian(self):
         import tqdm
         
-        # self.AEs.train()
         class_num   = self.config['network']['class_num']
         iter_valid  = self.config['training']['iter_valid']
         number_domians = self.config['network']['num_domains']
@@ -545,9 +229,6 @@ class SegmentationAgent(NetRunAgent):
                 entropy1 = -(outputs.softmax(1) * torch.log2(outputs.softmax(1) + 1e-10)).sum()/(W*H*C*D)    
                 # print(train_idx,entropy1.item(),'entropy1')
                 loss += entropy1
-                if self.config['training']['aes']  == False:
-                    loss.backward()
-                    self.optimizer.step()
                 if(self.scheduler is not None and \
                     not isinstance(self.scheduler, lr_scheduler.ReduceLROnPlateau)):
                     self.scheduler.step()
@@ -611,7 +292,6 @@ class SegmentationAgent(NetRunAgent):
         return train_scalers
     def training(self):
         import tqdm
-        # self.AEs.train()
         class_num   = self.config['network']['class_num']
         iter_valid  = self.config['training']['iter_valid']
         number_domians = self.config['network']['num_domains']
@@ -661,100 +341,23 @@ class SegmentationAgent(NetRunAgent):
                 
                 # forward + backward + optimize
                 if train_idx == 0:
-                    if self.config['training']['aes']  == True:
-                        with torch.no_grad():
-                            
-                            outputs_11 = self.net(inputs_0, domain_label=train_idx*torch.ones(inputs_0.shape[0], dtype=torch.long))
-                            outputs = outputs_11
-                            # loss = self.get_loss_value(data_0, outputs_11, labels_prob_0,self.fpl_uda)
-                            outputs_argmax_11 = torch.argmax(outputs_11.softmax(1), dim = 1, keepdim = True)
-                            # soft_out_11       = get_soft_label(outputs_argmax_11, class_num, self.tensor_type)
-                            outputs_argmax_11 = make_noise_masks_3d(outputs_argmax_11)
-                        
-                            outputs_argmax_11       = get_soft_label(outputs_argmax_11.to(torch.int64), 2, self.tensor_type)
-                            # outputs_argmax_11_cat = torch.cat([inputs_0,outputs_argmax_11],dim=1)
-                            # print(inputs_0.shape,outputs_argmax_11.shape,torch.cat([inputs_0,outputs_argmax_11],dim=1).shape)
-                        self.aes_opt.zero_grad()
-                
-                        aes_output1 = self.AEs(outputs_argmax_11)
-                        aes_output1 = aes_output1.softmax(1)
-                        # aes_output1[aes_output1>0.5] = 1
-                        # aes_output1[aes_output1<1.] = 0
-                        print(aes_output1[:,1].sum(),outputs_argmax_11[:,1].sum(),aes_output1.shape,'543')
-                        # aes_output1       = get_soft_label(aes_output1, class_num, self.tensor_type)
-                        # loss = dice_weight_loss(aes_output1,torch.argmax(labels_prob_0, dim = 1, keepdim = True)/1.0)
-                        loss = dice_weight_loss(aes_output1,labels_prob_0)
-                        # loss = self.get_loss_value(data_0, aes_output1, labels_prob_0,self.fpl_uda)
-                        # loss = self.criterionL2(aes_output1,torch.argmax(labels_prob_0, dim = 1, keepdim = True)/1.0 )*10.0
-                        # loss = tensor.float()
-                        loss.backward()
-                        
-                        self.aes_opt.step()
-                        print('AE loss:',loss.item(),'AE')
-                    else:
-                        self.optimizer.zero_grad()
-                        outputs_11 = self.net(inputs_0, domain_label=train_idx*torch.ones(inputs_0.shape[0], dtype=torch.long))
-                        outputs = outputs_11
-                        loss = self.get_loss_value(data_0, outputs_11, labels_prob_0,self.fpl_uda)
+                    self.optimizer.zero_grad()
+                    outputs_11 = self.net(inputs_0, domain_label=train_idx*torch.ones(inputs_0.shape[0], dtype=torch.long))
+                    outputs = outputs_11
+                    loss = self.get_loss_value(data_0, outputs_11, labels_prob_0,self.fpl_uda)
                 elif train_idx == 1:
-                    if self.config['training']['aes']  == True:
-                        with torch.no_grad():
-                            outputs_22 = self.net(inputs_1, domain_label=train_idx*torch.ones(inputs_1.shape[0], dtype=torch.long))
-                            outputs = outputs_22
-                            # loss = self.get_loss_value(data_1, outputs_22, labels_prob_1,self.fpl_uda)
-                            outputs_argmax_22 = torch.argmax(outputs_22.softmax(1), dim = 1, keepdim = True)
-                            # soft_out_22       = get_soft_label(outputs_argmax_22, class_num, self.tensor_type)
-                            outputs_argmax_22 = make_noise_masks_3d(outputs_argmax_22)
-                            outputs_argmax_22       = get_soft_label(outputs_argmax_22.to(torch.int64), 2, self.tensor_type)
-                            # outputs_argmax_22_cat = torch.cat([inputs_1,outputs_argmax_22],dim=1)
-                        self.aes_opt.zero_grad()
-                        aes_output2 = self.AEs(outputs_argmax_22)
-                        aes_output2 = aes_output2.softmax(1)
-                        # print(outputs_argmax_22.sum(),aes_output2.sum(),'*'*5)
-                        # aes_output2[aes_output2>0.5] = 1
-                        # aes_output2[aes_output2<1.] = 0
-                        # aes_output2       = get_soft_label(aes_output2, class_num, self.tensor_type)
-                        # loss = dice_weight_loss(aes_output2,torch.argmax(labels_prob_1, dim = 1, keepdim = True)/1.0)
-                        loss = dice_weight_loss(aes_output2,labels_prob_1)
-                        # print(aes_output2.shape,aes_output2.max(),aes_output2.min(),soft_out_22.max(),soft_out_22.min())
-                        # loss = self.get_loss_value(data_1, aes_output2, labels_prob_1,self.fpl_uda)
-                        # loss = self.criterionL2(aes_output2, torch.argmax(labels_prob_1, dim = 1, keepdim = True)/1.0)*10.0
-                        loss.backward()
-                        self.aes_opt.step()
-                        # self.optimizer.step()
-                        print('AE loss:',loss.item())
-                        # outputs_22,aes_output2 = self.net(inputs_1, domain_label=train_idx*torch.ones(inputs_0.shape[0], dtype=torch.long))
-                        # outputs = outputs_22
-                        # loss = self.get_loss_value(data_1, outputs_22, labels_prob_1,self.fpl_uda)
-                        # loss_aes = self.criterionL2(aes_output2, labels_prob_1)
-                        # loss += loss_aes*0.1
-                        # # print(loss_aes,'***')
-                    else:
-                        self.optimizer.zero_grad()
-                        outputs_22 = self.net(inputs_1, domain_label=train_idx*torch.ones(inputs_0.shape[0], dtype=torch.long))
-                        outputs = outputs_22
-                        loss = self.get_loss_value(data_1, outputs_22, labels_prob_1,self.fpl_uda)
+                    self.optimizer.zero_grad()
+                    outputs_22 = self.net(inputs_1, domain_label=train_idx*torch.ones(inputs_0.shape[0], dtype=torch.long))
+                    outputs = outputs_22
+                    loss = self.get_loss_value(data_1, outputs_22, labels_prob_1,self.fpl_uda)
                    
-                    if self.config['training']['dis']  == True:
-                        self.criterionL2 = nn.MSELoss()
-                        # print(outputs_22.shape,torch.max(outputs_22, dim = 1, keepdim = True).shape,'****')
-                        pred_fake = self.disseg(outputs_22.softmax(1))      
-                        all1 = torch.ones_like(pred_fake)
-                        loss_real = self.criterionL2(pred_fake, all1)
-                        loss = loss_real + loss
-                        # print(loss_real.item())
                 D,B,C,W,H = outputs.shape
                 entropy1 = -(outputs.softmax(1) * torch.log2(outputs.softmax(1) + 1e-10)).sum()/(W*H*C*D)    
-                # # print(train_idx,entropy1.item(),'entropy1')
                 loss += entropy1
-                if self.config['training']['aes']  == False:
-                    loss.backward()
-                    self.optimizer.step()
                 if(self.scheduler is not None and \
                     not isinstance(self.scheduler, lr_scheduler.ReduceLROnPlateau)):
                     self.scheduler.step()
                 train_loss = train_loss + loss.item()
-                # print(entropy1.item())
                 # get dice evaluation for each class
                 if(isinstance(outputs, tuple) or isinstance(outputs, list)):
                     outputs = outputs[0] 
@@ -927,16 +530,9 @@ class SegmentationAgent(NetRunAgent):
             for data in validIter_0:
                 inputs      = self.convert_tensor_type(data['image'])
                 labels_prob = self.convert_tensor_type(data['label_prob'])
-                # if self.train_fpl_uda:
-                #     image_weight = self.convert_tensor_type(data['image_weight'])
-                #     pixel_weight = self.convert_tensor_type(data['pixel_weight'])
-                #     image_weight, pixel_weight = image_weight.to(self.device), pixel_weight.to(self.device)
                 inputs, labels_prob  = inputs.to(self.device), labels_prob.to(self.device)
                 
                 batch_n = inputs.shape[0]
-                # if self.config['training']['aes']  == True:
-                #     outputs,_ = self.inferer.run(self.net, inputs, domain_label=0*torch.ones(inputs.shape[0], dtype=torch.long))
-                # else:
                 outputs = self.inferer.run(self.net, inputs, domain_label=0*torch.ones(inputs.shape[0], dtype=torch.long))
                 
                 # The tensors are on CPU when calculating loss for validation data
@@ -949,16 +545,6 @@ class SegmentationAgent(NetRunAgent):
                     outputs = outputs[0] 
                 outputs_argmax = torch.argmax(outputs, dim = 1, keepdim = True)
                 soft_out  = get_soft_label(outputs_argmax, class_num, self.tensor_type)
-                # print(soft_out.shape,labels_prob.shape,pixel_weight.shape,'255')
-                # if self.train_fpl_uda:
-                #     for i in range(batch_n):
-                #         soft_out_i, labels_prob_i = reshape_prediction_and_ground_truth(\
-                #             soft_out[i:i+1], labels_prob[i:i+1])
-                #         pixel_weight_i = reshape_tensor_to_2D(pixel_weight[i:i+1])
-                #         image_weight_i = image_weight[i:i+1]
-                #         temp_dice = image_weight_i*get_classwise_dice(soft_out_i, labels_prob_i, pixel_weight_i)
-                #         valid_dice_list_0.append(temp_dice.cpu().numpy())
-                # else:
                 for i in range(batch_n):
                     soft_out_i, labels_prob_i = reshape_prediction_and_ground_truth(\
                         soft_out[i:i+1], labels_prob[i:i+1])
@@ -970,9 +556,6 @@ class SegmentationAgent(NetRunAgent):
                     labels_prob = self.convert_tensor_type(data['label_prob'])
                     inputs, labels_prob  = inputs.to(self.device), labels_prob.to(self.device)
                     batch_n = inputs.shape[0]
-                    # if self.config['training']['aes']  == True:
-                    #     outputs,_ = self.inferer.run(self.net, inputs, domain_label=1*torch.ones(inputs.shape[0], dtype=torch.long))
-                    # else:
                     outputs = self.inferer.run(self.net, inputs, domain_label=1*torch.ones(inputs.shape[0], dtype=torch.long))
                     
                     # The tensors are on CPU when calculating loss for validation data
@@ -1116,13 +699,6 @@ class SegmentationAgent(NetRunAgent):
         else:
             self.device = torch.device("cuda:{0:}".format(device_ids[0]))
         self.net.to(self.device)
-        if self.config['training']['dis']  == True:        
-            self.disseg.to(self.device)
-        if self.config['training']['aes']  == True:        
-            self.AEs.to(self.device)    
-        # def test_time_dropout(m):
-        #     print(m)
-        # self.net.apply(test_time_dropout)
                 
 
         ckpt_dir    = self.config['training']['ckpt_save_dir']
@@ -1247,15 +823,10 @@ class SegmentationAgent(NetRunAgent):
         if self.config['training']['dis']  == True:
             torch.save(self.disseg.state_dict(),
                         "{0:}/{1:}_{2:}.pth".format(ckpt_dir, 'dis_para', self.max_val_it) )   
-        print(self.config['training']['aes'],'*****',self.max_val_it)
-        if self.config['training']['aes']:
-            print('*'*12,'save AE','*'*12)
-            torch.save(self.AEs.state_dict(),
-                        "{0:}/{1:}_{2:}.pth".format(ckpt_dir, 'AE_para_rand10', 'latest') )        
+           
         save_name = "{0:}/{1:}_{2:}.pt".format(ckpt_dir, ckpt_prefix, self.max_val_it)
         torch.save(save_dict, save_name) 
         txt_file = open("{0:}/{1:}_best.txt".format(ckpt_dir, ckpt_prefix), 'wt')
-        # print('ckpt_prefix',ckpt_prefix)
         txt_file.write(str(self.max_val_it))
         txt_file.close()
         logging.info('The best performing iter is {0:}, valid dice {1:}'.format(\
@@ -1270,16 +841,7 @@ class SegmentationAgent(NetRunAgent):
         self.AE = self.config['testing']['ae']
         device = torch.device("cuda:{0:}".format(device_ids[0]))
         self.net.to(device)
-        if self.AE is not None:
-            from PyMIC.pymic.net.net3d.unet2d5_dsbn import AEs
-            self.AEs = AEs(2)
-            # self.AEs.load_state_dict(torch.load(self.AE,map_location='cpu'))
-            aepara = '/data2/jianghao/VS/vs_seg2021/model_dual/vst1s_dsbn_t1t2_gan_AEs-hardMSE/AE_para_rand10_latest.pth'
-            print(aepara)
-            self.AEs.load_state_dict(torch.load(aepara,map_location='cpu'))
-            self.AEs.to(device)
-            # self.AEs.train()
-            print('AE is loaded.')
+        
         # self.net.eva()
         if(self.config['testing'].get('evaluation_mode', True)):
             self.net.eval()
@@ -1380,13 +942,6 @@ class SegmentationAgent(NetRunAgent):
                 else:                    
                     pred = self.inferer.run(self.net, images, domain_label=domian_label*torch.ones(images.shape[0], dtype=torch.long))
                     
-                    if self.AE is not None:
-                        outputs_argmax = torch.argmax(pred.softmax(1), dim = 1, keepdim = True)
-                        soft_out       = get_soft_label(outputs_argmax, self.config['network']['class_num'], self.tensor_type)
-                        print(outputs_argmax.sum(),'pred 1465')
-
-                        pred = self.AEs(soft_out.float())
-                        print(torch.argmax(pred.softmax(1), dim = 1, keepdim = True).sum(),'1468')
 
                     # convert tensor to numpy
                     if(isinstance(pred, (tuple, list))):
