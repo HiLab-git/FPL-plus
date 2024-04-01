@@ -1,0 +1,2 @@
+image,label
+./dataset/hrT2_valid/vs_gk_95_t2.nii.gz,./dataset/hrT2_valid/vs_gk_95_t2_seg.nii.gz

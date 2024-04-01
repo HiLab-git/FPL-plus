@@ -1,0 +1,2 @@
+image,label
+./dataset/fake_data/hrT2-ceT1_train_cyc/vs_gk_98_t2.nii.gz,./dataset/hrT2_train/lab/vs_gk_98_t2_seg.nii.gz

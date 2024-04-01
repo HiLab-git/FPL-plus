@@ -133,13 +133,11 @@ class SegmentationAgent(NetRunAgent):
                 
     def get_loss_value(self, data, pred, gt, fpl_uda = False):
         loss_input_dict = {'prediction':pred, 'ground_truth': gt}
-        # print(fpl_uda,'130')
         if fpl_uda:
             if data.get('pixel_weight', None) is not None:
                 loss_input_dict['pixel_weight'] = data['pixel_weight'].to(pred.device)
                 if data.get('image_weight', None) is not None:
                     loss_input_dict['image_weight'] = data['image_weight'].to(pred.device)
-            # print('111',loss_input_dict.keys())
         loss_value = self.loss_calculator(loss_input_dict)
         return loss_value
     
@@ -641,8 +639,7 @@ class SegmentationAgent(NetRunAgent):
                     outputs = outputs[0] 
                 outputs_argmax = torch.argmax(outputs, dim = 1, keepdim = True)
                 soft_out  = get_soft_label(outputs_argmax, class_num, self.tensor_type)
-                # print(soft_out.shape,labels_prob.shape,pixel_weight.shape,'255')
-              
+
                 
                 for i in range(batch_n):
                     soft_out_i, labels_prob_i = reshape_prediction_and_ground_truth(\
@@ -851,7 +848,7 @@ class SegmentationAgent(NetRunAgent):
                     if(type(m) == nn.Dropout):
                         logging.info('dropout layer')
                         m.train()
-                print('FPL:',self.FPL,'***** FPL: dropout on *****')
+                print('FPL:',self.FPL,'***** FPL: dropout Turn on *****')
                 self.net.apply(test_time_dropout)
                 
         
@@ -899,8 +896,6 @@ class SegmentationAgent(NetRunAgent):
                 hards = []
                 if self.FPL:
                     for i in range(6):
-                        # print(images.shape,'875')
-                        # pred = self.inferer.run(self.net, images,i, domain_label=domian_label*torch.ones(images.shape[0], dtype=torch.long))
                         pred = self.inferer.run(self.net, images, domain_label=domian_label*torch.ones(images.shape[0], dtype=torch.long))
                         if(isinstance(pred, (tuple, list))):
                             pred = [item.cpu().numpy() for item in pred]
@@ -911,7 +906,6 @@ class SegmentationAgent(NetRunAgent):
                             if (transform.inverse):
                                 data = transform.inverse_transform_for_prediction(data) 
                         names, pred = data['names'], data['predict']
-                        # print(pred.shape,'485')
                         if(isinstance(pred, (list, tuple))):
                             pred =  pred[0]
                         prob   = scipy.special.softmax(pred, axis = 1) 
@@ -924,14 +918,11 @@ class SegmentationAgent(NetRunAgent):
                         else: 
                             maps = np.concatenate((maps,prob),axis=0) 
                             hards = np.concatenate((hards,hard),axis=0) 
-                    # print(maps.shape,hards.shape,maps[:,1].shape,'476') #= (6,2,30,160,272)
-                    # vars = hards.var(axis=0).sum()
                     vars = maps.var(axis=0).sum()
                     means = np.mean(maps[:,1],axis=0)
                     uncertainty = -1.0 * (means*np.log(means + 1e-6))
                     boundary = np.where(uncertainty > 0.01 ,1,0).sum()
                     pixel_weight[names[0]] = [uncertainty]
-                    print(boundary,'boundary')
                     if boundary < 50:
                         uncer_one = 1
                     else:
@@ -966,8 +957,8 @@ class SegmentationAgent(NetRunAgent):
             student_tuplelist = list(zip(uncertainty_list.values(),uncertainty_list.keys()))
             student_tuplelist_sorted = sorted(student_tuplelist, reverse=False)
             print(student_tuplelist_sorted)
-            np.save('script/FPL-UDA/ISBI_bst_t2s.npy', student_tuplelist_sorted)
-            np.save('script/FPL-UDA/ISBI_bat_t2s-weight.npy', pixel_weight)
+            np.save(self.config['testing']['fpl_uncertainty_sorted'], student_tuplelist_sorted)
+            # np.save(self.config['testing']['fpl_uncertainty_weight'], pixel_weight)
         infer_time_list = np.asarray(infer_time_list)
         time_avg, time_std = infer_time_list.mean(), infer_time_list.std()
         logging.info("testing time {0:} +/- {1:}".format(time_avg, time_std))

@@ -1,0 +1,3 @@
+image,label
+./dataset/fake_data/ceT1-hrT2_cyc/vs_gk_99_t1.nii.gz,./dataset/ceT1/lab/vs_gk_99_t1.nii.gz
+./dataset/fake_data/ceT1-hrT2_auxcyc/vs_gk_99_t1.nii.gz,./dataset/ceT1/lab/vs_gk_99_t1.nii.gz

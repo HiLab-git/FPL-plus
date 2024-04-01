@@ -163,27 +163,8 @@ class NiftyDataset(Dataset):
         weight = np.asarray(weight, np.float32)
         return weight  
     def set_weight_(self,img_weight,pixel_weight):
-        min = 0.35452650235668165
-        max = 0.5006478347423622
-        # max = 0.20290632808909698
-        # min = 0.010712942210110751
-        if img_weight>max:
-            img_weight = max
-        img_weight = abs((max - img_weight)/(max-min))+0.01
-        # pixel_weight = (pixel_weight+1)*img_weight/2
-        # print(img_weight,'172')
-        # pixel_weight = np.ones_like(pixel_weight) * img_weight  
         pixel_weight[pixel_weight < 1] = 0
-        # print(pixel_weight.min(),pixel_weight.max())
         pixel_weight = pixel_weight * img_weight   
-        # print(pixel_weight.min(),pixel_weight.max())
-        # img_weight = -1.557408*(2.0*img_weight-1.0)
-        # img_weight = np.abs((np.arctan(img_weight)+1)/2)
-        # pixel_weight = np.exp((pixel_weight+1)*img_weight-2)
-        # pixel_weight = pow(e,(pixel_weight+1)*img_weight/2)
-                    # # print(sample_wise_weight,'505',uncer_one,uncertainty.shape,maps.shape)
-                    # pixel_wise_weight = np.ones_like(uncertainty)
-                    # pixel_wise_weight = pixel_wise_weight-uncertainty
         return pixel_weight
 
 
@@ -198,9 +179,6 @@ class NiftyDataset(Dataset):
             image_list.append(image_data)
         image = np.concatenate(image_list, axis = 0)
         image = np.asarray(image, np.float32) 
-        # if image.min() > -0.5:
-        #     image = image*2.0 - 1.0   
-        # print(image.max(),image.min(),'11111')
         
         sample = {'image': image, 'names' : names_list[0], 
                  'origin':image_dict['origin'],
