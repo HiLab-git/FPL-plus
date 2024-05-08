@@ -17,7 +17,7 @@ by [Jianghao Wu](https://jianghaowu.github.io/), et.al.
 
 ## Introduction
 
-This repository is for our paper **FPL+: Filtered Pseudo Label-based Unsupervised Cross-Modality Adaptation for 3D Medical Image Segmentation**. 
+This repository is for our IEEE TMI paper **FPL+: Filtered Pseudo Label-based Unsupervised Cross-Modality Adaptation for 3D Medical Image Segmentation**. 
 
 
 ![](./FPL-plus.png)
@@ -85,15 +85,15 @@ python ./PyMIC/pymic/net_run_dsbn/net_run.py test ./config_dual/vs_t1s_S.cfg
 <!-- ## Acknowledgement
 The U-Net model is borrowed from [Fed-DG](https://github.com/liuquande/FedDG-ELCFS). The Style Augmentation (SA) module is based on the nonlinear transformation in [Models Genesis](https://github.com/MrGiovanni/ModelsGenesis). The Dual-Normalizaiton is borrow from [DSBN](https://github.com/wgchang/DSBN). We thank all of them for their great contributions. -->
 
-<!-- ## Citation
-
+## Citation
 If you find this project useful for your research, please consider citing:
 
 ```bibtex
-@inproceedings{zhou2022dn,
-  title={Generalizable Cross-modality Medical Image Segmentation via Style Augmentation and Dual Normalization},
-  author={Zhou, Ziqi and Qi, Lei and Yang, Xin and Ni, Dong and Shi, Yinghuan},
-  booktitle={CVPR},
-  year={2022}
+@article{wu2024fpl+,
+  title={FPL+: Filtered Pseudo Label-based Unsupervised Cross-Modality Adaptation for 3D Medical Image Segmentation},
+  author={Wu, Jianghao and Guo, Dong and Wang, Guotai and Yue, Qiang and Yu, Huijun and Li, Kang and Zhang, Shaoting},
+  journal={IEEE Transactions on Medical Imaging},
+  year={2024},
+  publisher={IEEE}
 }
-``` -->
+``` 
