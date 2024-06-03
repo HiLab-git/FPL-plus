@@ -5,6 +5,7 @@ import torch.nn as nn
 import numpy as np
 from PyMIC.pymic.net_run_dsbn.dsbn import DomainSpecificBatchNorm3d
 from PyMIC.pymic.net_run_dsbn.dsbn import DomainSpecificBatchNorm2d
+
 from torch.nn import init
 def init_weights(net, init_type='normal', init_gain=0.02):
     """Initialize network weights.
@@ -149,20 +150,6 @@ class UpBlock(nn.Module):
         self.upsample3d = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=True)
         self.trans2d = nn.ConvTranspose2d(in_channels1, in_channels2, kernel_size=2, stride=2)
         self.trans3d = nn.ConvTranspose3d(in_channels1, in_channels2, kernel_size=2, stride=2)
-        # if bilinear:
-        #     if(dim == 2):
-        #         self.up = nn.Sequential(
-        #             nn.Conv2d(in_channels1, in_channels2, kernel_size = 1),
-        #             nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True))
-        #     else:
-        #         self.up = nn.Sequential(
-        #             nn.Conv3d(in_channels1, in_channels2, kernel_size = 1),
-        #             nn.Upsample(scale_factor=2, mode='trilinear', align_corners=True))
-        # else:
-        #     if(dim == 2):
-        #         self.up = nn.ConvTranspose2d(in_channels1, in_channels2, kernel_size=2, stride=2)
-        #     else:
-        #         self.up = nn.ConvTranspose3d(in_channels1, in_channels2, kernel_size=2, stride=2)
             
         self.conv = ConvBlockND(in_channels2 * 2, out_channels, num_domains, dim, dropout_p)
 
@@ -247,66 +234,8 @@ class AEs(nn.Module):
     def forward(self, x):
         x = self.model(x)
         return x
-# class AEs(nn.Module):
-#     def __init__(self, input_nc=1):
-#         super().__init__()
 
-#         model = [nn.Conv3d(input_nc, 32, 1),
-#                  nn.LeakyReLU(0.2, inplace=True)]
-
-#         model += [nn.Conv3d(32, 32, 1),
-#                   nn.InstanceNorm3d(128),
-#                   nn.LeakyReLU(0.2, inplace=True)]
-
-#         model += [nn.Conv3d(32, input_nc, 1)]
-
-#         self.model = nn.Sequential(*model)
-
-#     def forward(self, x):
-#         x = self.model(x)
-#         return x
-
-# class AEs(nn.Module):
-#   def __init__(self,input_c):
-#     super(AEs,self).__init__()
-#     self.encoder=nn.Sequential(
-#                   nn.Linear(28*128*128,256),
-#                   nn.ReLU(True),
-#                   nn.Linear(256,128),
-#                   nn.ReLU(True),
-#                   nn.Linear(128,64),
-#                   nn.ReLU(True)
-#                   )
-#     self.decoder=nn.Sequential(
-#                   nn.Linear(64,128),
-#                   nn.ReLU(True),
-#                   nn.Linear(128,256),
-#                   nn.ReLU(True),
-#                   nn.Linear(256,28*128*128),
-#                   nn.Sigmoid(),
-#                   )
-#   def forward(self,x):
-#     x=self.encoder(x)
-#     x=self.decoder(x)
-#     return x
-
-class AEsss(nn.Module):
-    def __init__(self, input_nc=1):
-        super().__init__()
-        self.adpNet = nn.Sequential(
-                            nn.Conv3d(input_nc,64,1),
-                            nn.LeakyReLU(negative_slope=0.2),
-                            nn.InstanceNorm3d(64),
-                            nn.Conv3d(64,64,1),
-                            nn.LeakyReLU(negative_slope=0.2),
-                            nn.InstanceNorm3d(64),   
-                            nn.Conv3d(64,input_nc,1),
-                            nn.LeakyReLU(negative_slope=0.2),
-                            nn.InstanceNorm3d(input_nc)                    
-                        )
-    def forward(self, x):
-        x_ada = self.adpNet(x)
-        return x_ada               
+             
 class UNet2D5_dsbn(nn.Module):
     """
     A 2.5D network combining 3D convolutions with 2D convolutions.
@@ -344,10 +273,9 @@ class UNet2D5_dsbn(nn.Module):
         self.n_class   = self.params['class_num']
         self.bilinear  = self.params['bilinear']
         self.num_domains = self.params['num_domains']
-        # self.aes = self.params['aes']
-        # self.AEs = AEs(self.n_class)
+
         assert(len(self.ft_chns) == 5)
-        # self.disseg = Dis(self.n_class)/
+
         self.block0 = DownBlock(self.in_chns, self.ft_chns[0], self.num_domains, self.dims[0], self.dropout[0], True)
         self.block1 = DownBlock(self.ft_chns[0], self.ft_chns[1], self.num_domains, self.dims[1], self.dropout[1], True)
         self.block2 = DownBlock(self.ft_chns[1], self.ft_chns[2], self.num_domains, self.dims[2], self.dropout[2], True)
@@ -377,10 +305,7 @@ class UNet2D5_dsbn(nn.Module):
         x = self.up3(x, x1, domain_label)
         x = self.up4(x, x0, domain_label)
         output = self.out_conv(x)
-        # if self.aes:
-        #     aes_output = self.AEs(output.softmax(1))  
-        #     return output,aes_output
-        # else:
+
         return output
 
 
